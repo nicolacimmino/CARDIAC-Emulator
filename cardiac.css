@@ -1,0 +1,43 @@
+
+textarea.codeInput
+{ 
+	font-family: "Courier New", Courier, monospace; 
+	font-size:11px; 
+	color:#000000; 
+}
+
+div.memoryCellAddress
+{
+	float:left;	
+	font-weight: bold;
+	font-family: "Courier New", Courier, monospace;
+}
+
+div.memoryCellValue
+{
+	float:left;	
+	margin-left: 5px;
+	margin-right: 10px;
+	font-family: "Courier New", Courier, monospace;
+}
+
+div.highlight
+{
+	color:green;
+	text-decoration:underline;
+}
+
+div.memoryCellActive
+{
+	font-weight: bold;
+	color: red;
+}
+
+div.memoryCellInactive
+{	
+}
+
+div.memoryBlockEnd 
+{
+	clear:left;	
+}
