@@ -1,0 +1,476 @@
+<!doctype html>
+<html ng-app="cardiacApp">
+
+<head>                
+	<!-- Angular JS  with Sanitize-->
+	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>		
+	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular-sanitize.js"></script>
+	
+	<!-- JQuery -->
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>	 
+	
+	<!-- Bootstrap CSS -->	
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+		
+	<link rel="stylesheet" type="text/css" href="cardiac.css">
+</head>
+
+<body ng-controller="cardiacController">
+	<!--
+		This is the header, it stays always visible regardless of selected tabs.
+	-->	
+	<div class="bg-primary">
+		<div class="container">
+			<h1>CARDboard Illustrative Aid to Computation</h1>
+			<p>An Angular.js implementation of a toolchain and emulator for the CARDIAC paper computer.</p> 
+			<br>
+		</div>
+	</div>	
+	<br>
+	<div class="container">
+		<div id="content" class="col-md-12">
+			<ul class="nav nav-tabs" data-tabs="tabs">
+			  <li class="active"><a href="#source" data-toggle="tab">Source Code</a></li>
+			  <li><a href="#binary" data-toggle="tab">Binary Code</a></li>
+			  <li><a href="#execute" data-toggle="tab">Execute</a></li>
+			  <li><a href="#about" data-toggle="tab">About</a></li>
+			</ul>
+			<br>
+			<div id="my-tab-content" class="tab-content">
+				
+				<!--
+					This is the tab where the users input the source code, can see a brief reminder
+					of the available commands and, once they decide to compile, the resulting binary
+					code is seen
+				-->
+				<div class="tab-pane active" id="source">
+					<div class="col-md-12">
+						<div class="col-md-3">
+							<textarea ng-model="rawAssembly" col="30" rows="10" class="codeInput"></textarea>
+						</div>	
+						<div class="col-md-6 text-center">
+							<input type="button" value="Assemble" ng-click="assemble()" class="btn btn-success"><br><br>
+							Assembling is the operation to transform human readable text, the source code you have typed, into numbers that
+							can be stored in a computer memory and, more importantly, can be understood and executed by the machine.
+							<br><br>
+							<div ng-bind-html="assemblyExample"></div>						
+						</div>
+						<div class="col-md-3">		
+							 Binary code:	
+							<div ng-repeat="value in binaryCode track by $index">			
+								<div class="memoryCellAddress">{{($index< 10?'0':'')+$index}}</div>
+								<div class="memoryCellValue">{{value}}</div>
+								<div class="memoryBlockEnd"></div>
+							</div>	
+							<div class="memoryBlockEnd"></div>
+						</div>			
+					</div>
+					<div class="col-md-12 text-center">					
+					<hr>
+					Below is a short reference of the available instructions taken from Wikipedia. For more details on CARDIAC see this Wikipedia 					
+					<a href="http://en.wikipedia.org/wiki/CARDboard_Illustrative_Aid_to_Computation">article</a>.
+					<br><br>
+					</div>					
+					<div class="col-md-12">
+						<div class="col-md-3">
+							<small>
+							<b>INP</b>	Input	take a number from the input card and put it in a specified memory cell.<br><br>
+							<b>CLA</b>	Clear and add	clear the accumulator and add the contents of a memory cell to the accumulator.<br><br>
+							<b>ADD</b>	Add	add the contents of a memory cell to the accumulator.<br><br>
+							</small>
+						</div>
+						<div class="col-md-3">
+							<small>
+							<b>TAC</b>	Test accumulator contents	performs a sign test on the contents of the accumulator; if minus, jump to a specified memory cell.<br><br>
+							<b>SFT</b>	Shift	shifts the accumulator x places left, then y places right, where x is the upper address digit and y is the lower.<br><br>							
+							<b>OUT</b>	Output	take a number from the specified memory cell and write it on the output card.<br><br>
+							</small>
+						</div>
+						<div class="col-md-3">
+							<small>														
+							<b>STO</b>	Store	copy the contents of the accumulator into a specified memory cell.<br><br>													
+							<b>SUB</b>	Subtract	subtract the contents of a specified memory cell from the accumulator.<br><br>
+							<b>JMP</b>	Jump	jump to a specified memory cell. The current cell number is written in cell 99. This allows for one level of subroutines by having the return be the instruction at cell 99 (which had '8' hardcoded as the first digit.<br><br>
+							</small>
+						</div>
+						<div class="col-md-3">
+							<small>														
+							<b>HRS</b>	Halt and reset	move bug to the specified cell, then stop program execution.<br><br>
+							</small>
+						</div>					
+					</div>
+				</div><!--tab-pane-->
+
+				<div class="tab-pane" id="binary">
+					<div class="col-md-6">		
+						 Binary code:	
+						<div ng-repeat="value in binaryCode track by $index">			
+							<div class="memoryCellAddress">{{($index< 10?'0':'')+$index}}</div>
+							<div class="memoryCellValue">{{value}}</div>
+							<div class="memoryBlockEnd"></div>
+						</div>	
+						<div class="memoryBlockEnd"></div>
+					</div>					
+					<div class="col-md-2">
+						<input type="button" value="Write bootloader to card" ng-click="compileToCard()" class="btn btn-default">
+					</div>
+					<div class="col-md-2">
+					   Input card:	
+						<div ng-repeat="inputValue in inputCard track by $index">
+							<div class="memoryCellAddress {{(registers.idc==$index)?'memoryCellActive':''}}">{{($index< 10?'0':'')+$index}}</div>
+							<div class="memoryCellValue">{{inputValue}}</div>
+							<div class="memoryBlockEnd"></div>			
+						</div>	
+						<div class="memoryBlockEnd"></div>
+					</div>
+				</div><!--tab-pane-->
+
+				<div class="tab-pane" id="execute">
+					
+					<div class="col-md-2">
+					   Input card:	
+						<div ng-repeat="inputValue in inputCard track by $index">
+							<div class="memoryCellAddress {{(registers.idc==$index)?'memoryCellActive':''}}">{{($index< 10?'0':'')+$index}}</div>
+							<div class="memoryCellValue">{{inputValue}}</div>
+							<div class="memoryBlockEnd"></div>			
+						</div>	
+						<div class="memoryBlockEnd"></div>
+					</div>				
+					
+					<div class="col-md-7">
+					   Memory:	
+						<div ng-repeat="memoryLocation in memory track by $index">					
+							<div id="mem_{{$index}}" class="memoryCellAddress {{(registers.pc==$index)?'memoryCellActive':'memoryCellInActive'}}">{{($index< 10?'0':'')+$index}}</div>
+							<div class="memoryCellValue {{(lastChangedMemoryLocation==$index)?'highlight':''}}">{{memoryLocation}}</div>
+							<div class="memoryBlockEnd" ng-if="($index%10)==9"></div>
+						</div>	
+						<br>					
+						Registers:<br>
+						<div class="memoryCellAddress">PC</div>
+						<div class="memoryCellValue">{{registers.pc}}</div>
+						
+						<div class="memoryCellAddress">IDC</div>
+						<div class="memoryCellValue">{{registers.idc}}</div>
+						
+						<div class="memoryCellAddress">ODC</div>
+						<div class="memoryCellValue">{{registers.odc}}</div>
+						
+						<div class="memoryCellAddress">ACC</div>
+						<div class="memoryCellValue">{{registers.accumulator}}</div>		
+						<br>	
+						<input type="button" ng-click="executeOneStep()">		
+					</div>
+					<div class="col-md-2">
+					   Output card:	
+						<div ng-repeat="outputValue in outputCard track by $index">			
+							<div class="memoryCellAddress {{(registers.odc==$index)?'memoryCellActive':''}}">{{($index< 10?'0':'')+$index}}</div>
+							<div class="memoryCellValue">{{outputValue}}</div>
+							<div class="memoryBlockEnd"></div>			
+						</div>	
+						<div class="memoryBlockEnd"></div>
+					</div>
+				</div><!--tab-pane-->
+				<div class="tab-pane" id="about">
+				<div class="jumbotron">
+				<br>
+					<small>
+					Cardiac.html is a Single Page Application (SPA) developed in Angular.js and emulating a CARDIAC paper computer.<br>
+					Copyright (C) 2014 Nicola Cimmino<br>
+					<br>
+					This program is free software: you can redistribute it and/or modify
+					it under the terms of the GNU General Public License as published by
+					the Free Software Foundation, either version 3 of the License, or
+					(at your option) any later version.<br>
+					<br>
+					This program is distributed in the hope that it will be useful,
+					but WITHOUT ANY WARRANTY; without even the implied warranty of
+					MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+					GNU General Public License for more details.<br>
+					<br>
+					You should have received a copy of the GNU General Public License
+					along with this program.  If not, see <http://www.gnu.org/licenses/>.<br>      
+					</small>
+					<br>
+				</div>
+				</div><!--tab-pane-->
+			</div>
+		</div>
+		<br>	
+	</div>
+	<br>
+	<!--
+		This is the footer, it stays always visible regardless of selected tabs.
+	-->
+	<div class="bg-primary">
+	  <div class="container">
+		
+	  </div>
+	</div>
+</body>
+
+<script>
+
+	cardiacApp = angular.module('cardiacApp', ['ngSanitize']);
+		
+	cardiacApp.controller('cardiacController', function($scope) 
+	{						
+		prepareScope();
+		
+		$scope.rawAssembly = localStorage.getItem("lastSource");
+				
+		$scope.executeOneStep = function() 
+		{		    
+			if($scope.registers.halt) return;
+						
+			$scope.opcode = $scope.memory[$scope.registers.pc].substring(0,1);
+			$scope.argument = parseInt($scope.memory[$scope.registers.pc].substring(1,3));			
+						
+			$scope.registers.pc++;
+			
+			$scope.lastChangedMemoryLocation=-1;
+						
+			switch($scope.opcode) 
+			{
+				case "0": executeInp(); break; 
+				case "1": executeCla(); break; 
+				case "2": executeAdd(); break; 
+				case "3": executeTac(); break; 
+				case "4": executeSft(); break; 
+				case "5": executeOut(); break;
+				case "6": executeSto(); break;
+				case "7": executeSub(); break;
+				case "8": executeJmp(); break;
+				case "9": executeHrs(); break;
+			}				
+		};
+		
+		$scope.assemble = function() 
+		{
+			$scope.binaryCode=[];
+			
+			localStorage.setItem("lastSource", $scope.rawAssembly);
+						
+			var memoryIndex = 0;
+			$scope.rawAssembly.split("\n").forEach(function(line) 
+			{
+				var tokens = line.toLowerCase().split(" ");
+				switch(tokens[0]) 
+				{
+					case "inp": opcode = "0"; break; 
+					case "cla": opcode = "1"; break; 
+					case "add": opcode = "2"; break; 
+					case "tac": opcode = "3"; break; 
+					case "sft": opcode = "4"; break; 
+					case "out": opcode = "5"; break;
+					case "sto": opcode = "6"; break;
+					case "sub": opcode = "7"; break;
+					case "jmp": opcode = "8"; break;
+					case "hrs": opcode = "9"; break;
+				}		
+				
+				argument=(tokens[1]!="")?tokens[1]:"00";
+				if(argument==undefined) argument = "00";
+				if(argument.length==1) argument = "0"+argument;
+				
+				$scope.binaryCode[memoryIndex]=opcode+argument;
+				
+				if(memoryIndex==0)
+				{
+					$scope.assemblyExample = "For instance your first instruction '<b>{0}</b>' has been converted" +
+												" to the first number in the binary code '<b>{1}</b>'." +
+												" Where '<b>{2}</b>' is the code for '{3}' and '<b>{4}</b>' is the argument. ";
+					$scope.assemblyExample = $scope.assemblyExample.format(line, $scope.binaryCode[0], opcode, tokens[0], argument);
+				}
+				
+				memoryIndex++;
+			});
+		}
+		
+		$scope.compileToCard = function() 
+		{		
+			for(ix=0;ix<25;ix++)
+			{
+				$scope.inputCard[ix] = '000';
+			}		
+			var cardIndex = 0;
+			var targetIndex = 10;
+			$scope.inputCard[cardIndex++]="002";
+			$scope.inputCard[cardIndex++]="800";
+			$scope.binaryCode.forEach(function(value) 
+			{
+				$scope.inputCard[cardIndex++]="0"+((targetIndex<10)?"0":"")+(targetIndex++);
+				$scope.inputCard[cardIndex++]=value;				
+			});
+			$scope.inputCard[cardIndex++]="810";
+		}
+		
+		/*
+		 * Creates and initializes variables in scope.
+		 */
+		function prepareScope()
+		{			
+			$scope.inputCard = new Array(25);		
+			for(ix=0;ix<25;ix++)
+			{
+				$scope.inputCard[ix] = '000';
+			}
+		
+			$scope.outputCard = new Array(25);		
+			for(ix=0;ix<25;ix++)
+			{
+				$scope.outputCard[ix] = '000';
+			}
+						
+			$scope.memory = new Array(100);
+			$scope.memory[0] = '001';
+			for(ix=1;ix<100;ix++)
+			{
+				$scope.memory[ix] = '000';
+			}
+		
+		
+			$scope.registers = {};
+			$scope.registers.pc = 0;
+			$scope.registers.idc = 0;
+			$scope.registers.odc = 0;
+			$scope.registers.accumulator = 0;
+			$scope.lastChangedMemoryLocation=-1;
+			$scope.registers.halt = false;
+		}
+		
+		/*
+		 * Executes the INP instruction.
+		 * Read one value from the current position in the input card and stores it
+		 * in the specified memory location.
+		 */
+		function executeInp()
+		{		
+			$scope.memory[$scope.argument] = $scope.inputCard[$scope.registers.idc];
+			$scope.registers.idc++;
+			$scope.lastChangedMemoryLocation = $scope.argument;
+		};
+						
+		/*
+		 * Executes the CLA instruction.
+		 * Clears the accumulator and loads it with the content of memory
+		 * at the address specified by the argument.
+		 */
+		function executeCla()
+		{
+			$scope.registers.accumulator = $scope.memory[$scope.argument];				 										
+		}	
+			
+		/*
+		 * Executes the ADD instruction.
+		 * Adds to the accumulator the content of memory
+		 * at the address specified by the argument.
+		 */
+		function executeAdd()
+		{
+			$scope.registers.accumulator += $scope.memory[$scope.argument];
+		}	
+			
+		/*
+		 * Executes the TAC instruction.
+		 * Performs a sign test on the contents of the accumulator. 
+		 * If minus, jump to the position specified by argument.		 
+		 */
+		function executeTac()
+		{
+			if($scope.registers.accumulator<0)
+			{				
+				$scope.registers.pc = $scope.argument;
+			}
+		}	
+			
+		/*
+		 * Executes the SFT instruction.
+		 * Shifts the accumulator left an amount of places defined by the upper digit of the argument
+		 * and then right an amount of places defined by the lower digit of the argument.
+		 * This is decimal shifting.		 
+		 */
+		function executeSft()
+		{
+			$scope.registers.accumulator = $scope.registers.accumulator * Math.pow(10, Math.floor($scope.argument/10))%1000;
+			$scope.registers.accumulator = Math.floor($scope.registers.accumulator / Math.pow(10, Math.floor($scope.argument%10)));			
+		}	
+		
+		/*
+		 * Executes the OUT instruction.
+		 * Writes to the current position in the output card
+		 * the value in the memory location specified by argument. 		 
+		 */
+		function executeOut()
+		{
+			$scope.outputCard[$scope.registers.odc] = $scope.memory[$scope.argument];
+			$scope.registers.odc++;			
+		}			
+		
+		/*
+		 * Executes the STO instruction.
+		 * Writes to the memory location specified by argument the
+		 * current value of the accumulator.
+		 */
+		function executeSto()
+		{
+			$scope.memory[$scope.argument] = $scope.registers.accumulator;
+			$scope.lastChangedMemoryLocation = $scope.argument;
+		}	
+		
+		/*
+		 * Executes the SUB instruction.
+		 * Subtracts from the accumulator the content of memory
+		 * at the address specified by the argument.
+		 */
+		function executeSub()
+		{
+			$scope.registers.accumulator -= $scope.memory[$scope.argument];
+		}	
+
+		/*
+		 * Executes the JMP instruction.
+		 * Jumps to the specified memory position.		 
+		 */
+		function executeJmp()
+		{
+			// Memory location '99' is always written, upon jump, with the
+			// address of the instruction following the jump. This allows
+			// for one level subroutines where calling JMP 99 effectively
+			// is equivalent to e return from subroutine.
+			var returnAddress=($scope.registers.pc);
+			$scope.memory[99] = '8'+((returnAddress<10)?"0":"")+returnAddress;
+			$scope.registers.pc = $scope.argument;			
+		}	
+
+		/*
+		 * Executes the HRS instruction.
+		 * Halts the processing.		 
+		 */
+		function executeHrs()
+		{
+			$scope.registers.pc = 0;
+			$scope.registers.halt = true;
+		}						
+	});
+
+	/*
+	 * We extend here the String functionality by providing a
+	 * format function that allows to do something similar to
+	 * printf. This helps to keep the code cleaner avoiding
+	 * a lot of string concatenations. It can be used as:
+	 *
+	 * "The value of {0} is {1}".format(someVar, someOtherVar).
+	 */
+	String.prototype.format = function() 
+	{
+		var result = this;
+		for (var ix = 0; ix < arguments.length; ix++) 
+		{
+			var tagRegExp = new RegExp("\\{" + ix + "\\}", "gi");
+			result = result.replace(tagRegExp, arguments[ix]);
+		}
+		return result;
+	};
+</script>
+</html>
